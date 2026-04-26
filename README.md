@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nebrija Social – Práctica 4
 
-## Getting Started
+Clon funcional de Twitter construido con Next.js 16 y Tailwind CSS.
 
-First, run the development server:
+## Instalación y arranque
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en el navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura de navegación
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+La app usa el **App Router** de Next.js con las siguientes rutas:
 
-## Learn More
+| Ruta | Página |
+|------|--------|
+| `/login` | Login y registro (toggle entre formularios) |
+| `/` | Timeline global con paginación |
+| `/post/[id]` | Detalle de un post con comentarios |
+| `/profile/[id]` | Perfil de usuario con sus posts |
 
-To learn more about Next.js, take a look at the following resources:
+### Protección de rutas
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+El fichero `proxy.ts` actúa como middleware de Next.js: lee la cookie `token` en cada petición y redirige al usuario a `/login` si no está autenticado. Si ya tiene token y visita `/login`, lo redirige a la home.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Autenticación
 
-## Deploy on Vercel
+El token JWT se guarda en una cookie accesible desde JavaScript (`token`). También se guardan `userId` y `username` en cookies para mostrar el avatar del usuario en la cabecera y navegar al perfil propio.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Datos anidados de la API
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+La API devuelve objetos anidados:
+
+- **`post.autor`** → `{ _id, username }` — se usa el `_id` para enlazar al perfil y la inicial del `username` para el avatar.
+- **`post.likes`** → array de IDs de usuario. Se compara con el `userId` en cookie para saber si el usuario actual ya dio like.
+- **`post.retweets`** → array de `{ usuario, fecha }`. Se filtra por `retweet.usuario === userId` para detectar si el usuario ya hizo retweet.
+- **`post.comentarios`** → array de `{ _id, contenido, autor, fecha }` con el autor también anidado.
+- **`user.seguidores`** → array de IDs. Si el `userId` propio aparece aquí, el usuario está siendo seguido.
+
+Todos los endpoints autenticados envían los headers `Authorization: Bearer <token>` y `x-nombre: Claudia Murci` de forma centralizada desde `lib/api.ts`.
